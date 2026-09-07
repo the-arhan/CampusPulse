@@ -29,7 +29,6 @@
     <nav class="main-nav" aria-label="Main">
       <button class="nav-link active" data-view="pulse">Pulse</button>
       <button class="nav-link" data-view="explore">Explore</button>
-      <button class="nav-link active" data-view="latest-news">Latest News</button>
       <button class="nav-link" data-view="insights">Insights</button>
       <button class="nav-link" data-view="activity">My Activity</button>
     </nav>
@@ -62,6 +61,35 @@
         </button>
       </div>
     </div>
+
+    <!-- Latest News -->
+    <section class="feed-section news-section" aria-labelledby="news-heading">
+      <div class="section-head">
+        <h2 id="news-heading">📰 Latest News</h2>
+        <p class="muted">Official updates from campus administration.</p>
+      </div>
+
+      <div id="newsSkeleton" class="news-grid" hidden aria-hidden="true">
+        <div class="skeleton-card news-skeleton-card"></div>
+        <div class="skeleton-card news-skeleton-card"></div>
+        <div class="skeleton-card news-skeleton-card"></div>
+      </div>
+
+      <div id="newsGrid" class="news-grid" hidden></div>
+
+      <p id="newsEmpty" class="empty-state" hidden>
+        <span class="empty-icon">📰</span>
+        <strong>No latest news available.</strong>
+        <span class="muted">Check back later for campus updates.</span>
+      </p>
+
+      <p id="newsError" class="empty-state" hidden>
+        <span class="empty-icon">⚠️</span>
+        <strong>Unable to load the latest news.</strong>
+        <span class="muted">Please try again.</span>
+        <button class="btn btn-ghost" id="newsRetryBtn" type="button" style="margin-top:10px;">Try again</button>
+      </p>
+    </section>
 
     <!-- Happening Now -->
     <section class="feed-section" aria-labelledby="happening-now-heading">
@@ -333,6 +361,14 @@
   </div>
 </div>
 
+<!-- ============ MODAL: NEWS DETAIL ============ -->
+<div class="modal-overlay" id="newsModalOverlay" hidden>
+  <div class="modal news-modal" role="dialog" aria-modal="true" aria-labelledby="newsModalTitle">
+    <button class="modal-close" id="newsModalClose" aria-label="Close">✕</button>
+    <div id="newsModalBody"></div>
+  </div>
+</div>
+
 <!-- ============ MODAL: ANONYMITY INFO ============ -->
 <div class="modal-overlay" id="anonymityModalOverlay" hidden>
   <div class="modal anonymity-modal" role="dialog" aria-modal="true" aria-labelledby="anonymityModalTitle">
@@ -359,6 +395,7 @@
 <div class="toast" id="toast" hidden></div>
 
 <script src="data.js"></script>
+<script src="newsData.js"></script>
 <script src="api.js"></script>
 <script src="app.js"></script>
 </body>

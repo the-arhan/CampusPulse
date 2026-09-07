@@ -253,11 +253,33 @@ const CampusPulseAPI = (() => {
     });
   }
 
+  // ---------------- News ----------------
+  //
+  // TEMPORARY MOCK DATA — backend integration point
+  // ------------------------------------------------------------
+  // getLatestNews() currently resolves MOCK_NEWS (see newsData.js).
+  // Once GET /api/news exists, replace ONLY the body of this
+  // function, e.g.:
+  //
+  //   function getLatestNews() {
+  //     return fetch("/api/news").then(res => res.json());
+  //   }
+  //
+  // Keep the resolved value an array of objects shaped like:
+  //   { id, title, excerpt, category, date, imageUrl, isPinned }
+  // The Latest News UI (app.js) only ever calls
+  // CampusPulseAPI.getLatestNews() and renders whatever array
+  // comes back — it does not need to change either way.
+  function getLatestNews() {
+    return delay(MOCK_NEWS);
+  }
+
   return {
     getOrCreateIdentity,
     getIssues, getIssue, createIssue,
     toggleAffected, isAffectedByMe, isReportedByMe, getMyReportIds, getMyAffectedIds,
     addSolution, markSolutionHelpful, myHelpfulVote,
-    getInsights
+    getInsights,
+    getLatestNews
   };
 })();

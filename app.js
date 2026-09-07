@@ -8,6 +8,7 @@
 
 const state = {
   issues: [],
+  news: [],
   identity: null,
   view: "pulse",
   filters: { category: "all", sort: "priority", search: "" },
@@ -82,6 +83,113 @@ function debounce(fn, wait) {
 }
 
 function findIssue(id) { return state.issues.find(i => i.id === id); }
+function findNews(id) { return state.news.find(n => n.id === id); }
+
+// ============================================================
+// LATEST NEWS
+// Reads only through CampusPulseAPI.getLatestNews() — see the
+// comment above that function in api.js for what the backend
+// developer needs to change later. This section never touches
+// mock data directly.
+// ============================================================
+function newsDateLabel(isoString) {
+  return new Date(isoString).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+function newsCardHTML(item) {
+  const imageBlock = item.imageUrl
+    ? `<div class="news-card-image"><img src="${escapeHtml(item.imageUrl)}" alt="" loading="lazy"></div>`
+    : `<div class="news-card-image news-card-image-placeholder" aria-hidden="true">📰</div>`;
+
+  return `
+    <article class="news-card" data-news-id="${item.id}" tabindex="0" role="button" aria-label="Read: ${escapeHtml(item.title)}">
+      ${imageBlock}
+      <div class="news-card-body">
+        <div class="news-card-top">
+          <span class="tag">${escapeHtml(item.category)}</span>
+          ${item.isPinned ? `<span class="pinned-badge">📌 Pinned</span>` : ""}
+        </div>
+        <div class="news-card-title">${escapeHtml(item.title)}</div>
+        <div class="news-card-excerpt">${escapeHtml(item.excerpt)}</div>
+        <div class="news-card-footer">
+          <span>${newsDateLabel(item.date)}</span>
+          <span class="news-read-more">Read more →</span>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+async function renderLatestNews() {
+  const skeleton = document.getElementById("newsSkeleton");
+  const grid = document.getElementById("newsGrid");
+  const empty = document.getElementById("newsEmpty");
+  const error = document.getElementById("newsError");
+
+  skeleton.hidden = false;
+  grid.hidden = true;
+  empty.hidden = true;
+  error.hidden = true;
+
+  try {
+    const news = await CampusPulseAPI.getLatestNews();
+
+    // Failure-shaped responses (null/undefined/not-an-array) are
+    // treated as "nothing to show" rather than crashing the page —
+    // the rest of CampusPulse must keep working either way.
+    const list = Array.isArray(news) ? news : [];
+
+    state.news = [...list].sort((a, b) => {
+      if (Boolean(a.isPinned) !== Boolean(b.isPinned)) return a.isPinned ? -1 : 1;
+      return new Date(b.date) - new Date(a.date);
+    });
+
+    skeleton.hidden = true;
+
+    if (state.news.length === 0) {
+      empty.hidden = false;
+      return;
+    }
+
+    grid.hidden = false;
+    grid.innerHTML = state.news.map(newsCardHTML).join("");
+  } catch (err) {
+    console.error("CampusPulse: failed to load latest news", err);
+    skeleton.hidden = true;
+    grid.hidden = true;
+    error.hidden = false;
+  }
+}
+
+function renderNewsModal(item) {
+  const imageBlock = item.imageUrl
+    ? `<div class="news-card-image"><img src="${escapeHtml(item.imageUrl)}" alt=""></div>`
+    : `<div class="news-card-image news-card-image-placeholder" aria-hidden="true">📰</div>`;
+
+  document.getElementById("newsModalBody").innerHTML = `
+    ${imageBlock}
+    <div class="issue-card-tags">
+      <span class="tag">${escapeHtml(item.category)}</span>
+      ${item.isPinned ? `<span class="pinned-badge">📌 Pinned</span>` : ""}
+    </div>
+    <h2 id="newsModalTitle" class="issue-modal-title">${escapeHtml(item.title)}</h2>
+    <div class="issue-modal-meta"><span>${newsDateLabel(item.date)}</span></div>
+    <p class="issue-modal-desc">${escapeHtml(item.excerpt)}</p>
+  `;
+}
+
+function openNewsModal(id) {
+  const item = findNews(id);
+  if (!item) return;
+  renderNewsModal(item);
+  document.getElementById("newsModalOverlay").hidden = false;
+  document.body.style.overflow = "hidden";
+}
+
+function closeNewsModal() {
+  document.getElementById("newsModalOverlay").hidden = true;
+  document.body.style.overflow = "";
+}
 
 // ============================================================
 // Issue card rendering (shared by Pulse / Explore / Insights / Activity)
@@ -550,6 +658,8 @@ async function init() {
   renderSurvivalGrid();
   renderReportCategoryGrid();
 
+  renderLatestNews(); // not awaited — loads independently, in parallel with issues, and can't block the rest of the page
+
   await showFeedSkeleton(300);
   state.issues = await CampusPulseAPI.getIssues();
 
@@ -614,6 +724,9 @@ function wireEvents() {
     const affectedBtn = e.target.closest(".affected-btn");
     if (affectedBtn) { e.stopPropagation(); handleAffectedClick(affectedBtn); return; }
 
+    const newsCard = e.target.closest(".news-card");
+    if (newsCard) { openNewsModal(newsCard.dataset.newsId); return; }
+
     const card = e.target.closest(".issue-card");
     if (card) { openIssueModal(card.dataset.id); return; }
 
@@ -625,7 +738,16 @@ function wireEvents() {
       e.preventDefault();
       openIssueModal(e.target.dataset.id);
     }
+    if ((e.key === "Enter" || e.key === " ") && e.target.classList.contains("news-card")) {
+      e.preventDefault();
+      openNewsModal(e.target.dataset.newsId);
+    }
   });
+
+  // ---- news modal + retry ----
+  document.getElementById("newsModalClose").addEventListener("click", closeNewsModal);
+  document.getElementById("newsModalOverlay").addEventListener("click", e => { if (e.target.id === "newsModalOverlay") closeNewsModal(); });
+  document.getElementById("newsRetryBtn").addEventListener("click", renderLatestNews);
 
   // ---- issue modal ----
   document.getElementById("issueModalClose").addEventListener("click", closeIssueModal);
@@ -698,6 +820,7 @@ function wireEvents() {
     if (e.key !== "Escape") return;
     if (!document.getElementById("issueModalOverlay").hidden) closeIssueModal();
     if (!document.getElementById("reportModalOverlay").hidden) closeReportModal();
+    if (!document.getElementById("newsModalOverlay").hidden) closeNewsModal();
     if (!document.getElementById("anonymityModalOverlay").hidden) document.getElementById("anonymityModalOverlay").hidden = true;
   });
 }

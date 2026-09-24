@@ -572,7 +572,35 @@ const CampusPulseAPI = (() => {
   }
 
   // ---------------- News ----------------
-
+const MOCK_NEWS = [
+  {
+    id: "news-1",
+    category: "Campus",
+    pinned: true,
+    title: "Orientation Week Schedule Released for Incoming Batch",
+    excerpt: "The college has published the full orientation schedule, including hostel check-in times.",
+    date: "Sep 5, 2026",
+    imageUrl: "images/orientation.jpg"
+  },
+  {
+    id: "news-2",
+    category: "Events",
+    pinned: false,
+    title: "Campus Workshop Announced",
+    excerpt: "A new workshop has been announced for students interested in technology and innovation.",
+    date: "Sep 6, 2026",
+    imageUrl: "images/workshop.jpg"
+  },
+  {
+    id: "news-3",
+    category: "Announcement",
+    pinned: false,
+    title: "Important Campus Announcement",
+    excerpt: "Students can check the latest information and important campus updates here.",
+    date: "Sep 7, 2026",
+    imageUrl: "images/announcement.jpg"
+  }
+];
   function getLatestNews() {
     return delay(MOCK_NEWS);
   }
